@@ -3,34 +3,57 @@ const Input_View = document.getElementById('input-view').firstElementChild;
 const History_View = document.getElementById('answer-view').firstElementChild;
 
 const PI = Math.PI;
+var numericValue = null;
 let stored = null;
 let number = [];
-let operator = null;
 
 let process = {
   firstNumeric: null,
   operator: null,
   secondNumeric: null,
+  operators_accepted: ['+', '-', '*', '/', '^'],
+  control_operatos: ['='],
 };
 
 Buttons_Contaienr.addEventListener('click', btnContainer);
+window.addEventListener('keypress', keyPressReaction);
+
+function keyPressReaction(event) {
+  console.log(event.key);
+
+  if (event.key >= 0 && event.key <= 9) {
+    handleNumericInput(event, numericValue, registerUserDigit);
+  }
+
+  process.operators_accepted.map((item) => {
+    if (event.key === item && item !== '=') {
+      manageOperations();
+      operator = event.key;
+      process.operator = operator;
+      showOperationProcess();
+
+      number = [];
+    }
+  });
+
+  if (event.key === '=' || event.key === 'Enter') {
+    event.preventDefault(); // Prevent the default browser action
+    manageOperations();
+  }
+
+  if (event.key === 'Delete') {
+    handleNumericInput(event, numericValue, del);
+  }
+}
 
 function btnContainer(event) {
-  let numericValue;
-
   switch (event.target.className) {
     case 'number':
-      if (process.operator === null) {
-        registerUserDigit('firstNumeric', event, numericValue);
-      } else if (process.operator !== null) {
-        Input_View.textContent = '';
-        registerUserDigit('secondNumberic', event, numericValue);
-      }
+      handleNumericInput(event, numericValue, registerUserDigit);
       break;
 
     case 'operator':
       manageOperations();
-
       operator = event.target.textContent;
       process.operator = operator;
       showOperationProcess();
@@ -44,6 +67,10 @@ function btnContainer(event) {
 
     case 'ac':
       cleanFields();
+      break;
+
+    case 'del':
+      handleNumericInput(event, numericValue, del);
       break;
   }
 }
@@ -68,7 +95,12 @@ function showOperationProcess() {
 }
 
 function registerUserDigit(numberTurn, event, currentUserDigit) {
-  number.push(event.target.textContent);
+  if (event.type === 'click') {
+    number.push(event.target.textContent);
+  } else if (event.type === 'keypress') {
+    number.push(event.key);
+  }
+
   currentUserDigit = number.join('');
 
   if (event.target.id === 'pi') {
@@ -81,6 +113,19 @@ function registerUserDigit(numberTurn, event, currentUserDigit) {
 
   currentUserDigit = null;
 }
+
+function del(numberTurn, event, currentUserDigit) {
+  if (process.operator === null || process.secondNumeric !== null) {
+    number.pop();
+    currentUserDigit = number.join('');
+    process[numberTurn] = Number.parseFloat(currentUserDigit);
+
+    Input_View.textContent = currentUserDigit;
+
+    currentUserDigit = null;
+  }
+}
+
 function manageOperations() {
   if (process.secondNumeric !== null) {
     showOperationProcess();
@@ -162,11 +207,7 @@ function divide(first, second) {
 }
 
 function power(number, powerOf) {
-  stored = 1;
-  for (let i = 0; i < powerOf; i++) {
-    stored *= number;
-  }
-
+  stored = Math.pow(number, powerOf);
   process.firstNumeric = stored;
   process.secondNumeric = null;
   return stored;
@@ -174,4 +215,15 @@ function power(number, powerOf) {
 
 function doOperation(operation, first, second) {
   return operation(first, second);
+}
+
+function handleNumericInput(event, currentUserDigit, callBackFunction) {
+  let numberTurn = null;
+  if (process.operator === null) {
+    numberTurn = 'firstNumeric';
+    return callBackFunction(numberTurn, event, currentUserDigit);
+  } else {
+    numberTurn = 'secondNumeric';
+    return callBackFunction(numberTurn, event, currentUserDigit);
+  }
 }
