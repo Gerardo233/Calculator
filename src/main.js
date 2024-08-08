@@ -12,8 +12,14 @@ let process = {
   firstNumeric: null, //The first number typed by the user
   operator: null, //The operator chosen by the user
   secondNumeric: null, //The second number typed
-  operators_accepted: ['+', '-', '*', '/', '^'], //To know the operations available
   control_operatos: ['='], //keys which are not for the process of the operations
+  operations_accepted: {
+    '+': sum,
+    '-': substract,
+    '*': multiply,
+    '/': divide,
+    '^': power,
+  },
 };
 
 Buttons_Contaienr.addEventListener('click', btnContainer); //Event added to the container of buttons
@@ -61,18 +67,26 @@ function btnContainer(event) {
       break;
 
     case 'operator':
-      // Execute the current operation, if any, and set the new operator.
-      manageOperations();
-      operator = event.target.textContent; // Store the operator clicked by the user.
-      process.operator = operator;
-      showOperationProcess(); // Update the display with the operation.
+      if (process.firstNumeric !== null) {
+        // Execute the current operation, if any, and set the new operator.
+        manageOperations();
+        operator = event.target.textContent; // Store the operator clicked by the user.
+        process.operator = operator;
+        showOperationProcess(); // Update the display with the operation.
 
-      number = []; // Reset the numeric input array for the next number.
+        number = []; // Reset the numeric input array for the next number.
+      } else {
+        alert('You must enter a number first');
+      }
       break;
 
     case 'equal':
       // Finalize the calculation and show the result.
-      manageOperations();
+      if (process.firstNumeric !== null) {
+        manageOperations();
+      } else {
+        alert('You must enter a number first');
+      }
       break;
 
     case 'ac':
@@ -93,7 +107,7 @@ function cleanFields() {
   process.firstNumeric = null; //Rellocate the default value
   process.secondNumeric = null; //Rellocate the default value
   process.operator = null; //Rellocate the default value
-  Input_View.textContent = ''; //Empties the view
+  Input_View.textContent = 0; //Empties the view
   History_View.textContent = 'Type something...';
 }
 
@@ -152,13 +166,20 @@ function registerUserDigit(numberTurn, event, currentUserDigit) {
 function del(numberTurn, event, currentUserDigit) {
   //Control if the first number is being typed or the second (I want to be allowed to use this only in these two cases)
   if (process.operator === null || process.secondNumeric !== null) {
-    number.pop(); //I remove the last digit pushed in the array
-    currentUserDigit = number.join(''); //I joined the elements of the array
-    process[numberTurn] = Number.parseFloat(currentUserDigit); //The value is assigned in (firstNumeric or secondNumeric)
+    if (number.length <= 1) {
+      currentUserDigit = 0;
+      process[numberTurn] = currentUserDigit;
+      Input_View.textContent = currentUserDigit;
+    } else {
+      number.pop();
+      console.log(number);
 
-    Input_View.textContent = currentUserDigit; //The number is displayed
+      //I remove the last digit pushed in the array
+      currentUserDigit = number.join(''); //I joined the elements of the array
+      process[numberTurn] = Number.parseFloat(currentUserDigit); //The value is assigned in (firstNumeric or secondNumeric)
 
-    currentUserDigit = null; //The variable is cleaned
+      Input_View.textContent = currentUserDigit; //The number is displayed
+    }
   }
 }
 
@@ -168,53 +189,13 @@ function manageOperations() {
     // Display the operation process in the interface.
     showOperationProcess();
 
-    // Perform the operation based on the stored operator.
-    switch (process.operator) {
-      case '+':
-        // Perform addition and display the result.
-        Input_View.textContent = doOperation(
-          sum,
-          process.firstNumeric,
-          process.secondNumeric,
-        );
-        break;
+    let toPerform = process.operations_accepted[process.operator];
 
-      case '-':
-        // Perform subtraction and display the result.
-        Input_View.textContent = doOperation(
-          substract,
-          process.firstNumeric,
-          process.secondNumeric,
-        );
-        break;
-
-      case '*':
-        // Perform multiplication and display the result.
-        Input_View.textContent = doOperation(
-          multiply,
-          process.firstNumeric,
-          process.secondNumeric,
-        );
-        break;
-
-      case '/':
-        // Perform division and display the result.
-        Input_View.textContent = doOperation(
-          divide,
-          process.firstNumeric,
-          process.secondNumeric,
-        );
-        break;
-
-      case '^':
-        // Perform exponentiation and display the result.
-        Input_View.textContent = doOperation(
-          power,
-          process.firstNumeric,
-          process.secondNumeric,
-        );
-        break;
-    }
+    Input_View.textContent = doOperation(
+      toPerform,
+      process.firstNumeric,
+      process.secondNumeric,
+    );
   }
 }
 
@@ -248,6 +229,9 @@ function divide(first, second) {
     process.firstNumeric = stored; //I pass in the process object in firstNumeric the result
     process.secondNumeric = null; //I rellocate to the default value the secondNumeric
     return stored; //The answer is returned
+  } else {
+    alert('You cannot divide by zero');
+    cleanFields(); //
   }
 }
 
