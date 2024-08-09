@@ -8,12 +8,14 @@ let stored = null; //Variable to store the value of the previously operations an
 let number = []; //Variable to store each digit. Then this will be used to get the elements and join them as a single number
 
 //Object who has the control of the process of the operations
-let process = {
+let CalculatorEngine = {
   firstNumeric: null, //The first number typed by the user
   operator: null, //The operator chosen by the user
   secondNumeric: null, //The second number typed
-  control_operatos: ['='], //keys which are not for the process of the operations
+  control_operators: ['='], //keys which are not for the process of the operations
+
   operations_accepted: {
+    //Contains the function that belongs to the reprented symbol
     '+': sum,
     '-': substract,
     '*': multiply,
@@ -29,22 +31,21 @@ window.addEventListener('keypress', keyPressReaction); //Event added to the wind
 function keyPressReaction(event) {
   //1. To know when a number key is pressed
   if (event.key >= 0 && event.key <= 9) {
+
     handleNumericInput(event, numericValue, registerUserDigit);
   }
 
-  //Evaluate if the key matches an operator available from the object who stores this information
-  process.operators_accepted.map((item) => {
-    //It ensures to not store the "=" as the operator for the action to be performed
-    if (event.key === item && item !== '=') {
-      manageOperations(); //Manage the operation to be performed (this is here in case the user does not press the "=" key and just keeps pressing numbers and operators to get results)
-
-      operator = event.key; //Store the symbol ("+", "-", "*", "/" or "^")
-      process.operator = operator; //Store the operator in the object
+  for (const eventKey in CalculatorEngine.operations_accepted) {
+    if(event.key === eventKey && event.key !== CalculatorEngine.control_operators[0]){
+      manageOperations();
+      CalculatorEngine.operator = event.key;
       showOperationProcess(); //It shows the proccess in History_View
 
-      number = []; //It empties the number array
+      number = [];
+
     }
-  });
+  }
+
 
   //If the key pressed is "=" || "Enter"
   if (event.key === '=' || event.key === 'Enter') {
@@ -67,11 +68,11 @@ function btnContainer(event) {
       break;
 
     case 'operator':
-      if (process.firstNumeric !== null) {
+      if (CalculatorEngine.firstNumeric !== null) {
         // Execute the current operation, if any, and set the new operator.
         manageOperations();
         operator = event.target.textContent; // Store the operator clicked by the user.
-        process.operator = operator;
+        CalculatorEngine.operator = operator;
         showOperationProcess(); // Update the display with the operation.
 
         number = []; // Reset the numeric input array for the next number.
@@ -82,7 +83,7 @@ function btnContainer(event) {
 
     case 'equal':
       // Finalize the calculation and show the result.
-      if (process.firstNumeric !== null) {
+      if (CalculatorEngine.firstNumeric !== null) {
         manageOperations();
       } else {
         alert('You must enter a number first');
@@ -104,9 +105,9 @@ function btnContainer(event) {
 //********************************************************************************************* */
 function cleanFields() {
   number = []; //It empties the number array
-  process.firstNumeric = null; //Rellocate the default value
-  process.secondNumeric = null; //Rellocate the default value
-  process.operator = null; //Rellocate the default value
+  CalculatorEngine.firstNumeric = null; //Rellocate the default value
+  CalculatorEngine.secondNumeric = null; //Rellocate the default value
+  CalculatorEngine.operator = null; //Rellocate the default value
   Input_View.textContent = 0; //Empties the view
   History_View.textContent = 'Type something...';
 }
@@ -115,12 +116,12 @@ function showOperationProcess() {
   History_View.textContent = ' '; //Before showing the infor, it empties the current info displayed
 
   //This when the second numeric has not chosen yet
-  if (process.secondNumeric === null) {
+  if (CalculatorEngine.secondNumeric === null) {
     //This shows the first number and the operator selected
-    History_View.textContent = `${process.firstNumeric} ${process.operator}`;
+    History_View.textContent = `${CalculatorEngine.firstNumeric} ${CalculatorEngine.operator}`;
   } else {
     //When all the elements have been selected (first numeric + operator + second numeric)
-    History_View.textContent = `${process.firstNumeric} ${process.operator} ${process.secondNumeric}`;
+    History_View.textContent = `${CalculatorEngine.firstNumeric} ${CalculatorEngine.operator} ${CalculatorEngine.secondNumeric}`;
   }
 }
 
@@ -144,11 +145,11 @@ function registerUserDigit(numberTurn, event, currentUserDigit) {
 
   //If the PI key is pressed
   if (event.target.id === 'pi') {
-    process[numberTurn] = PI;
+    CalculatorEngine[numberTurn] = PI;
   } else {
     //When other key numbers are pressed
     //The value is assigned in (firstNumeric or secondNumeric)
-    process[numberTurn] = Number.parseFloat(currentUserDigit);
+    CalculatorEngine[numberTurn] = Number.parseFloat(currentUserDigit);
   }
 
   //The number is displayed
@@ -165,10 +166,13 @@ function registerUserDigit(numberTurn, event, currentUserDigit) {
  */
 function del(numberTurn, event, currentUserDigit) {
   //Control if the first number is being typed or the second (I want to be allowed to use this only in these two cases)
-  if (process.operator === null || process.secondNumeric !== null) {
+  if (
+    CalculatorEngine.operator === null ||
+    CalculatorEngine.secondNumeric !== null
+  ) {
     if (number.length <= 1) {
       currentUserDigit = 0;
-      process[numberTurn] = currentUserDigit;
+      CalculatorEngine[numberTurn] = currentUserDigit;
       Input_View.textContent = currentUserDigit;
     } else {
       number.pop();
@@ -176,7 +180,7 @@ function del(numberTurn, event, currentUserDigit) {
 
       //I remove the last digit pushed in the array
       currentUserDigit = number.join(''); //I joined the elements of the array
-      process[numberTurn] = Number.parseFloat(currentUserDigit); //The value is assigned in (firstNumeric or secondNumeric)
+      CalculatorEngine[numberTurn] = Number.parseFloat(currentUserDigit); //The value is assigned in (firstNumeric or secondNumeric)
 
       Input_View.textContent = currentUserDigit; //The number is displayed
     }
@@ -185,16 +189,17 @@ function del(numberTurn, event, currentUserDigit) {
 
 function manageOperations() {
   // Check if the second numeric input has been provided.
-  if (process.secondNumeric !== null) {
+  if (CalculatorEngine.secondNumeric !== null) {
     // Display the operation process in the interface.
     showOperationProcess();
 
-    let toPerform = process.operations_accepted[process.operator];
+    let toPerform =
+      CalculatorEngine.operations_accepted[CalculatorEngine.operator];
 
     Input_View.textContent = doOperation(
       toPerform,
-      process.firstNumeric,
-      process.secondNumeric,
+      CalculatorEngine.firstNumeric,
+      CalculatorEngine.secondNumeric,
     );
   }
 }
@@ -203,22 +208,22 @@ function manageOperations() {
 
 function sum(first, second) {
   stored = first + second; //I make the addition of numbers
-  process.firstNumeric = stored; //I pass in the process object in firstNumeric the result
-  process.secondNumeric = null; // I rellocate to the default value the secondNumeric
+  CalculatorEngine.firstNumeric = stored; //I pass in the process object in firstNumeric the result
+  CalculatorEngine.secondNumeric = null; // I rellocate to the default value the secondNumeric
   return stored; //The answer is returned
 }
 
 function substract(first, second) {
   stored = first - second; //The substracction is made
-  process.firstNumeric = stored; //I pass in the process object in firstNumeric the result
-  process.secondNumeric = null; // I rellocate to the default value the secondNumeric
+  CalculatorEngine.firstNumeric = stored; //I pass in the process object in firstNumeric the result
+  CalculatorEngine.secondNumeric = null; // I rellocate to the default value the secondNumeric
   return stored; //The answer is returned
 }
 
 function multiply(first, second) {
   stored = first * second; //The multiplication is made
-  process.firstNumeric = stored; //I pass in the process object in firstNumeric the result
-  process.secondNumeric = null; // I rellocate to the default value the secondNumeric
+  CalculatorEngine.firstNumeric = stored; //I pass in the process object in firstNumeric the result
+  CalculatorEngine.secondNumeric = null; // I rellocate to the default value the secondNumeric
   return stored; //The answer is returned
 }
 
@@ -226,8 +231,8 @@ function divide(first, second) {
   //It enssures to knot divide by zero
   if (second != 0) {
     stored = first / second; //The division is made
-    process.firstNumeric = stored; //I pass in the process object in firstNumeric the result
-    process.secondNumeric = null; //I rellocate to the default value the secondNumeric
+    CalculatorEngine.firstNumeric = stored; //I pass in the process object in firstNumeric the result
+    CalculatorEngine.secondNumeric = null; //I rellocate to the default value the secondNumeric
     return stored; //The answer is returned
   } else {
     alert('You cannot divide by zero');
@@ -237,8 +242,8 @@ function divide(first, second) {
 
 function power(number, powerOf) {
   stored = Math.pow(number, powerOf); //The power is made
-  process.firstNumeric = stored; //I pass in the process object in firstNumeric the result
-  process.secondNumeric = null; //I rellocate to the default value the secondNumeric
+  CalculatorEngine.firstNumeric = stored; //I pass in the process object in firstNumeric the result
+  CalculatorEngine.secondNumeric = null; //I rellocate to the default value the secondNumeric
   return stored; //The answer is returned
 }
 
@@ -272,7 +277,7 @@ function doOperation(operation, first, second) {
  */
 function handleNumericInput(event, currentUserDigit, callBackFunction) {
   let numberTurn = null;
-  if (process.operator === null) {
+  if (CalculatorEngine.operator === null) {
     numberTurn = 'firstNumeric';
     return callBackFunction(numberTurn, event, currentUserDigit);
   } else {
